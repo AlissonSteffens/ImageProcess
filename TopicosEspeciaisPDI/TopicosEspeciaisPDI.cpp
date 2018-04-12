@@ -13,6 +13,8 @@ Mat logaritmo(Mat imagemBase);
 Mat potencia(Mat imagemBase, double gamma);
 Mat janelamento(Mat imagemBase, int limiar_inf, int limiar_sup);
 Mat suavizacao(Mat imagemBase);
+Mat agucamento(Mat imagemBase);
+Mat somar(Mat imagem1, Mat imagem2);
 
 Mat escalaCinzaOPenCV(Mat imagemColorida);
 
@@ -24,12 +26,14 @@ int mat[5][5]={ 1,1,1,1,1 ,
 
 int main()
 {
+	Mat imagemOriginal;
 	Mat imagemTeste;
 	Mat imagemNegativo;
 	Mat imagemGrayscale;
-	imagemTeste = imread("Imagens/placa.tif");
+	imagemTeste = imread("Imagens/moon.tif");
 	imagemNegativo = negativo(imagemTeste);
 	imagemGrayscale = escalaCinza(imagemTeste);
+	imagemOriginal = imagemTeste.clone();
 	imshow("Teste", imagemTeste);
 	/*imshow("Negativo", imagemNegativo);
 	imshow("Cinza", imagemGrayscale);
@@ -41,10 +45,139 @@ int main()
 	imshow("LOGARITMO", logaritmo(imagemTeste));
 	imshow("POTENCIA", potencia(imagemTeste, 2));*/
 	//imshow("Janelamento", janelamento(imagemTeste, 90, 138));
-	imshow("Suavizaçãop", suavizacao(imagemTeste));
+	//imshow("Suavização", suavizacao(imagemTeste));
+	imshow("agucamento", agucamento(imagemTeste));
+	imshow("soma", somar(imagemTeste, imagemOriginal));
 	waitKey(0);
     
 	return 0;
+}
+
+Mat somar(Mat imagem1, Mat imagem2)
+{
+	Mat imagemResultado;
+	if (imagem1.size().area() > imagem2.size().area())
+		imagem1.copyTo(imagemResultado);
+	else
+		imagem2.copyTo(imagemResultado);
+
+	for (int i = 0; i < imagemResultado.rows - 1; i++)
+		for (int j = 0; j < imagemResultado.cols - 1; j++)
+		{
+			if (imagem2.rows > i && imagem2.cols > j)
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) / 2;
+				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) / 2;
+				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) / 2;
+			}
+			else
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0]);
+				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1]);
+				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2]);
+			}
+		}
+
+	return imagemResultado;
+}
+
+Mat agucamento(Mat imagemBase) {
+	Mat aux = imagemBase;
+	Vec3b pixel;
+
+	//Filtro A do Slide
+	/*int filtro[3][3] = { { 0,1,0 },
+	{ 1,-4,1 },
+	{ 0,1,0 } };*/
+
+	//Filtro B do Slide
+	/*int filtro[3][3] = { { 1,1,1 },
+	{ 1,-8, 1 },
+	{ 1,1,1 } };*/
+
+	//Filtro C do Slide
+	//int filtro[3][3] = { { 0,-1,0 },
+	//{ -1,4,-1 },
+	//{ 0,-1,0 } };
+
+	//Filtro D do Slide
+	int filtro[3][3] = { { -1,-1,-1 },
+	{ -1,8,-1 },
+	{ -1,-1,-1 } };
+
+	int somaR;
+	int somaG;
+	int somaB;
+	int somaK;
+
+
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			for (int linha = 0; linha < 3; linha++) {
+				for (int coluna = 0; coluna < 3; coluna++) {					
+						
+					pixel = aux.at<Vec3b>(x + linha, y + coluna);
+
+					somaR += filtro[linha][coluna] * pixel[2]; //Multiplica Vermelho
+					somaG += filtro[linha][coluna] * pixel[1]; //Multiplica Verde
+					somaB += filtro[linha][coluna] * pixel[0]; //Multiplica azul
+					somaK += filtro[linha][coluna];					
+				}
+			}
+
+			if (somaK == 0) {
+				if (somaR > 255)
+					pixel[2] = 255;
+				else if (somaR < 0)
+					pixel[2] = 0;
+				else
+					pixel[2] = somaR;
+
+				if (somaR > 255)
+					pixel[1] = 255;
+				else if (somaR < 0)
+					pixel[1] = 0;
+				else
+				pixel[1] = somaG;
+
+				if (somaR > 255)
+					pixel[0] = 255;
+				else if (somaR < 0)
+					pixel[0] = 0;
+				else
+				pixel[0] = somaB;
+			}
+			else {
+				if (somaR / somaK > 255)
+					pixel[2] = 255;
+				else if (somaR / somaK < 0)
+					pixel[2] = 0;
+				else
+					pixel[2] = somaR / somaK;
+
+				if (somaG / somaK > 255)
+					pixel[1] = 255;
+				else if (somaG / somaK < 0)
+					pixel[1] = 0;
+				else
+					pixel[1] = somaG / somaK;
+				if (somaB / somaK > 255)
+					pixel[0] = 255;
+				else if (somaB / somaK < 0)
+					pixel[0] = 0;
+				else
+					pixel[0] = somaB / somaK;
+			}
+
+			somaR = 0;
+			somaG = 0;
+			somaB = 0;
+			somaK = 0;
+			aux.at<Vec3b>(x, y) = pixel;
+
+		}
+	}
+	return aux;
 }
 
 Mat canal(Mat imagemColorida, int canal) {
