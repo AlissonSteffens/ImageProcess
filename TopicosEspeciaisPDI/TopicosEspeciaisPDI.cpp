@@ -13,7 +13,7 @@ Mat logaritmo(Mat imagemBase);
 Mat potencia(Mat imagemBase, double gamma);
 Mat janelamento(Mat imagemBase, int limiar_inf, int limiar_sup);
 Mat suavizacao(Mat imagemBase);
-Mat agucamento(Mat imagemBase, int tipo);
+Mat agucamento(Mat imagemBase, bool tipo);
 Mat agucamento_cinza(Mat imagemBase, int tipo);
 Mat somar(Mat imagem1, Mat imagem2);
 Mat alargamento(cv::Mat imagemBase);
@@ -48,7 +48,7 @@ int main()
 	//imshow("POTENCIA", potencia(imagemTeste, 2));
 	
 	//imshow("Suavização", suavizacao(imagemTeste));
-	imagemTeste = agucamento(imagemTeste, 2);
+	imagemTeste = agucamento(imagemTeste, true);
 	
 	imshow("aguçamento", imagemTeste);
 	//imshow("somaHard", somarHard(imagemTeste, imagemOriginal));
@@ -136,6 +136,10 @@ Mat somarHard(Mat imagem1, Mat imagem2)
 	return imagemResultado;
 }
 
+
+int max(int a, int b) {
+	return a < b ? b : a;
+}
 Mat somar(Mat imagem1, Mat imagem2)
 {
 	Mat imagemResultado;
@@ -149,15 +153,15 @@ Mat somar(Mat imagem1, Mat imagem2)
 		{
 			if (imagem2.rows > i && imagem2.cols > j)
 			{
-				imagemResultado.at<Vec3b>(i, j)[0] = ((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) -128) / 2;
-				imagemResultado.at<Vec3b>(i, j)[1] = ((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128) / 2;
-				imagemResultado.at<Vec3b>(i, j)[2] = ((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128) / 2;
+				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) -128) / 2, 255),0);
+				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128) / 2, 255), 0);
 			}
 			else
 			{
-				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0]);
-				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1]);
-				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2]);
+				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0] - 128);
+				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1] - 128);
+				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2] - 128);
 			}
 		}
 
