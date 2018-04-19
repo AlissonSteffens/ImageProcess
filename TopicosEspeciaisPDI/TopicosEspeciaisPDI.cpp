@@ -12,19 +12,17 @@ Mat limiarizacao(Mat imagemBase, int limiar);
 Mat logaritmo(Mat imagemBase);
 Mat potencia(Mat imagemBase, double gamma);
 Mat janelamento(Mat imagemBase, int limiar_inf, int limiar_sup);
-Mat suavizacao(Mat imagemBase);
+Mat suavizacao(Mat imagemBase, int size);
 Mat agucamento(Mat imagemBase, bool tipo);
 Mat agucamento_cinza(Mat imagemBase, int tipo);
 Mat somar(Mat imagem1, Mat imagem2);
+Mat somar128(Mat imagem1, Mat imagem2);
+Mat subtrair(Mat imagem1, Mat imagem2);
 Mat alargamento(cv::Mat imagemBase);
 Mat somarHard(Mat imagem1, Mat imagem2);
 Mat escalaCinzaOPenCV(Mat imagemColorida);
 
-int mat[5][5]={ 1,1,1,1,1 ,
-				1,1,1,1,1 ,
-				1,1,1,1,1 ,
-				1,1,1,1,1 ,
-				1,1,1,1,1 };
+//int mat[5][5]={ 1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 };
 
 int main()
 {
@@ -37,6 +35,10 @@ int main()
 	imagemGrayscale = escalaCinza(imagemTeste);
 	imagemOriginal = imagemTeste.clone();
 	imshow("Teste", imagemTeste);
+
+	imshow("Suave", suavizacao(imagemTeste,5));
+	imshow("sub", subtrair(imagemTeste, suavizacao(imagemTeste, 5)));
+	imshow("fim", somarHard(imagemTeste, subtrair(imagemTeste, suavizacao(imagemTeste, 5))));
 	/*imshow("Negativo", imagemNegativo);
 	imshow("Cinza", imagemGrayscale);
 	imshow("OPCV", escalaCinzaOPenCV(imagemTeste));
@@ -52,7 +54,7 @@ int main()
 	
 	imshow("aguçamento", imagemTeste);
 	//imshow("somaHard", somarHard(imagemTeste, imagemOriginal));
-	imshow("soma", somar(imagemTeste, imagemOriginal));
+	imshow("soma", somar128(imagemTeste, imagemOriginal));
 	//imshow("LOGARITMO", alargamento(imagemTeste));
 	waitKey(0);
     
@@ -140,6 +142,33 @@ Mat somarHard(Mat imagem1, Mat imagem2)
 int max(int a, int b) {
 	return a < b ? b : a;
 }
+Mat somar128(Mat imagem1, Mat imagem2)
+{
+	Mat imagemResultado;
+	if (imagem1.size().area() > imagem2.size().area())
+		imagem1.copyTo(imagemResultado);
+	else
+		imagem2.copyTo(imagemResultado);
+
+	for (int i = 0; i < imagemResultado.rows - 1; i++)
+		for (int j = 0; j < imagemResultado.cols - 1; j++)
+		{
+			if (imagem2.rows > i && imagem2.cols > j)
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) - 128) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128) / 2, 255), 0);
+			}
+			else
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0] - 128);
+				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1] - 128);
+				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2] - 128);
+			}
+		}
+
+	return imagemResultado;
+}
 Mat somar(Mat imagem1, Mat imagem2)
 {
 	Mat imagemResultado;
@@ -153,9 +182,9 @@ Mat somar(Mat imagem1, Mat imagem2)
 		{
 			if (imagem2.rows > i && imagem2.cols > j)
 			{
-				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) -128) / 2, 255),0);
-				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128) / 2, 255), 0);
-				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0])) / 2, 255),0);
+				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1])) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2])) / 2, 255), 0);
 			}
 			else
 			{
@@ -164,6 +193,42 @@ Mat somar(Mat imagem1, Mat imagem2)
 				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2] - 128);
 			}
 		}
+
+	return imagemResultado;
+}
+
+
+Mat subtrair(Mat imagem1, Mat imagem2)
+{
+	Mat imagemResultado;
+	if (imagem1.size().area() > imagem2.size().area())
+		imagem1.copyTo(imagemResultado);
+	else
+		imagem2.copyTo(imagemResultado);
+
+	for (int i = 0; i < imagemResultado.rows - 1; i++)
+		for (int j = 0; j < imagemResultado.cols - 1; j++)
+		{
+			if (imagem2.rows > i && imagem2.cols > j)
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = max(min((imagem1.at<Vec3b>(i, j)[0] - imagem2.at<Vec3b>(i, j)[0]),255),0);
+				imagemResultado.at<Vec3b>(i, j)[1] = max(min((imagem1.at<Vec3b>(i, j)[1] - imagem2.at<Vec3b>(i, j)[1]), 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[2] = max(min((imagem1.at<Vec3b>(i, j)[2] - imagem2.at<Vec3b>(i, j)[2]), 255), 0);
+
+				int diferencaR = imagemResultado.at<Vec3b>(i, j)[0] - imagem1.at<Vec3b>(i, j)[0];
+				int diferencaG = imagemResultado.at<Vec3b>(i, j)[1] - imagem1.at<Vec3b>(i, j)[1];
+				int diferencaB = imagemResultado.at<Vec3b>(i, j)[2] - imagem1.at<Vec3b>(i, j)[2];
+
+				
+			}
+			else
+			{
+				imagemResultado.at<Vec3b>(i, j)[0] = (imagem1.at<Vec3b>(i, j)[0]);
+				imagemResultado.at<Vec3b>(i, j)[1] = (imagem1.at<Vec3b>(i, j)[1]);
+				imagemResultado.at<Vec3b>(i, j)[2] = (imagem1.at<Vec3b>(i, j)[2]);
+			}
+		}
+
 
 	return imagemResultado;
 }
@@ -435,10 +500,62 @@ Mat janelamento(Mat imagemBase, int li, int ls) {
 
 	return aux;
 }
-Mat suavizacao(Mat imagemBase)
+
+
+
+Mat suavizacao(Mat imagemBase,int size)
+{
+	int** mat = new int*[size];
+	for (int i = 0; i < size; ++i)
+		mat[i] = new int[size];
+
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = 0; j < size; j++)
+		{
+			mat[i][j] = 1;
+		}
+	}
+	Mat aux = imagemBase.clone();
+	for (int x = size/2; x < aux.rows - size / 2; x++) {
+		for (int y = size / 2; y < aux.cols - size / 2; y++) {
+			Vec3b pixel = aux.at<Vec3b>(x, y);
+
+			double somaR = 0;
+			double somaG = 0;
+			double somaB = 0;
+
+			for (int i = 0, xi = x - size / 2; i < size; i++, xi++)
+			{
+				for (int j = 0, yj = y - size / 2; j < size; j++, yj++)
+				{
+					somaR += mat[i][j] * aux.at<Vec3b>(xi, yj)[2];
+					somaG += mat[i][j] * aux.at<Vec3b>(xi, yj)[1];
+					somaB += mat[i][j] * aux.at<Vec3b>(xi, yj)[0];
+				}
+			}
+
+			int base = size * size;
+			somaR = somaR / base;
+			somaG = somaG / base;
+			somaB = somaB / base;
+
+			aux.at<Vec3b>(x, y) = Vec3b (somaR, somaG, somaB);
+		}
+	}
+
+	return aux;
+}
+
+Mat suavizacao_cinza(Mat imagemBase,int size)
 {
 	Mat aux = imagemBase.clone();
 	aux = escalaCinzaOPenCV(aux);
+
+	int** mat = new int*[size];
+	for (int i = 0; i < size; ++i)
+		mat[i] = new int[size];
+
 	for (int x = 2; x < aux.rows-2; x++) {
 		for (int y = 2; y < aux.cols-2; y++) {
 			uchar pixel = aux.at<uchar>(x, y);
