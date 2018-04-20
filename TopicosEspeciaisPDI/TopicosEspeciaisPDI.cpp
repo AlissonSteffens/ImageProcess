@@ -21,6 +21,8 @@ Mat subtrair(Mat imagem1, Mat imagem2);
 Mat alargamento(cv::Mat imagemBase);
 Mat somarHard(Mat imagem1, Mat imagem2);
 Mat escalaCinzaOPenCV(Mat imagemColorida);
+float* histograma(Mat imagemBase);
+
 
 //int mat[5][5]={ 1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 ,1,1,1,1,1 };
 
@@ -34,11 +36,9 @@ int main()
 	imagemNegativo = negativo(imagemTeste);
 	imagemGrayscale = escalaCinza(imagemTeste);
 	imagemOriginal = imagemTeste.clone();
-	imshow("Teste", imagemTeste);
+	histograma(imagemTeste);
+	imshow("Teste", imagemGrayscale);
 
-	imshow("Suave", suavizacao(imagemTeste,5));
-	imshow("sub", subtrair(imagemTeste, suavizacao(imagemTeste, 5)));
-	imshow("fim", somarHard(imagemTeste, subtrair(imagemTeste, suavizacao(imagemTeste, 5))));
 	/*imshow("Negativo", imagemNegativo);
 	imshow("Cinza", imagemGrayscale);
 	imshow("OPCV", escalaCinzaOPenCV(imagemTeste));
@@ -50,11 +50,27 @@ int main()
 	//imshow("POTENCIA", potencia(imagemTeste, 2));
 	
 	//imshow("Suavização", suavizacao(imagemTeste));
-	imagemTeste = agucamento(imagemTeste, true);
-	
-	imshow("aguçamento", imagemTeste);
-	//imshow("somaHard", somarHard(imagemTeste, imagemOriginal));
-	imshow("soma", somar128(imagemTeste, imagemOriginal));
+
+	/*imagemTeste = agucamento(imagemTeste, true);
+	imshow("Aguçamento normalizado", imagemTeste);
+	imshow("Soma Aguçamento normal", somar128(imagemTeste, imagemOriginal));
+
+
+	imagemTeste = agucamento(imagemOriginal.clone(), false);
+	imshow("Aguçamento", imagemTeste);
+	imshow("Soma Aguçamento", somarHard(imagemTeste, imagemOriginal));
+
+	imagemTeste = agucamento(imagemOriginal.clone(), false);
+	imshow("Aguçamentoasd", imagemTeste);
+	imshow("Soma Aguçamento Hard", somarHard(imagemTeste, imagemOriginal));
+	*/
+	/*imagemTeste = imagemOriginal.clone();
+	imshow("Suave", suavizacao(imagemTeste, 9));
+	imshow("SubSuave", subtrair(imagemTeste, suavizacao(imagemTeste, 9)));
+	imshow("Mascara de Nitidez", somarHard(imagemTeste, subtrair(imagemTeste, suavizacao(imagemTeste, 9))));*/
+
+
+
 	//imshow("LOGARITMO", alargamento(imagemTeste));
 	waitKey(0);
     
@@ -155,9 +171,9 @@ Mat somar128(Mat imagem1, Mat imagem2)
 		{
 			if (imagem2.rows > i && imagem2.cols > j)
 			{
-				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) - 128) / 2, 255), 0);
-				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128) / 2, 255), 0);
-				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128) / 2, 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[0] = max(min(((imagem1.at<Vec3b>(i, j)[0] + imagem2.at<Vec3b>(i, j)[0]) - 128), 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[1] = max(min(((imagem1.at<Vec3b>(i, j)[1] + imagem2.at<Vec3b>(i, j)[1]) - 128), 255), 0);
+				imagemResultado.at<Vec3b>(i, j)[2] = max(min(((imagem1.at<Vec3b>(i, j)[2] + imagem2.at<Vec3b>(i, j)[2]) - 128), 255), 0);
 			}
 			else
 			{
@@ -233,9 +249,44 @@ Mat subtrair(Mat imagem1, Mat imagem2)
 	return imagemResultado;
 }
 
+float* histograma(Mat imagemBase) {
+	float vec[256];
+	for (int i = 0; i < 255; i++){
+		vec[i] = 0;
+	}
+	int a;
+	for (int x = 0; x < imagemBase.rows; x++) {
+		for (int y = 0; y < imagemBase.cols; y++) {
+			uchar pixel = imagemBase.at<uchar>(x, y);
+			a = pixel;
+			
+			vec[a]++;
+		}
+		
+	}
+	float size = imagemBase.rows * imagemBase.cols;
+	for (int i = 0; i < 255; i++) {
+		vec[i] = (vec[i] * 100 )/size;
+	}
+	for (int i = 0; i < 255; i++) {
+		if (i < 10) {
+			std::cout << "0";
+		}
+		if (i < 100) {
+			std::cout << "0";
+		}
+		std::cout << i << " " << "$";
+		for (float j = 0; j <= vec[i]; j+=0.01)
+		{
+			std::cout << "|";
+		}
+		std::cout << "\n";
+	}
+	return vec;
+}
 
 Mat agucamento(Mat imagemBase, bool tipo) {
-	Mat aux = imagemBase;
+	Mat aux = imagemBase.clone();
 	Vec3b pixel;
 	
 	//Filtro A do Slide
