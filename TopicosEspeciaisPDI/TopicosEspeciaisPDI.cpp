@@ -4,6 +4,7 @@
 
 
 using namespace cv;
+using Matriz = std::vector<std::vector<int>>;
 
 Mat canal(Mat imagemColorida, int canal);
 Mat negativo(Mat imagemBase);
@@ -21,6 +22,15 @@ Mat subtrair(Mat imagem1, Mat imagem2);
 Mat alargamento(cv::Mat imagemBase);
 Mat somarHard(Mat imagem1, Mat imagem2);
 Mat escalaCinzaOPenCV(Mat imagemColorida);
+Mat erosao(Mat imagemBase, Matriz elemEstrut);
+Mat dilatacao(Mat imagemBase, Matriz elemEstrut);
+Mat abertura(Mat imageBase, Matriz elemEstrut);
+Mat fechamento(Mat imageBase, Matriz elemEstrut);
+Matriz esCustom(int tamX, int tamY, ...);
+Matriz elemEstrut11x11circle();
+Matriz elemEstrut33circle();
+Matriz kernelPonderado5();
+Matriz kernelCompleto(int tamanho);
 float limiarizacaoGlobalSimples(Mat imagemBase);
 void histograma(Mat imagemBase, float vec[256]);
 
@@ -33,14 +43,17 @@ int main()
 	Mat imagemTeste;
 	Mat imagemNegativo;
 	Mat imagemGrayscale;
-	imagemTeste = imread("Imagens/log.tif");
+	imagemTeste = imread("Imagens/erosao.tif");
 	imagemNegativo = negativo(imagemTeste);
-	imagemGrayscale = escalaCinza(imagemTeste);
+	imagemGrayscale = escalaCinzaOPenCV(imagemTeste);
 	imagemOriginal = imagemTeste.clone();
-	int a = limiarizacaoGlobalSimples(imagemTeste);
+	//int a = limiarizacaoGlobalSimples(imagemTeste);
 
-	imshow("Teste", imagemGrayscale);
-	imshow("Testeaaa", limiarizacao(imagemTeste, a));
+	imshow("Original", imagemTeste);
+	imshow("Erosao", erosao(imagemGrayscale, kernelCompleto(11)));
+	//imshow("Dilatacao", dilatacao(imagemGrayscale, kernelCompleto(11)));
+	/*imshow("Abertura", abertura(imagemGrayscale, elemEstrut33circle()));
+	imshow("Fechamento", fechamento(imagemGrayscale, elemEstrut33circle()));*/
 	/*imshow("Negativo", imagemNegativo);
 	imshow("Cinza", imagemGrayscale);
 	imshow("OPCV", escalaCinzaOPenCV(imagemTeste));
@@ -78,6 +91,52 @@ int main()
     
 	return 0;
 }
+
+Matriz kernelPonderado5() {
+	return esCustom(5, 5,
+		1, 4, 6, 4, 1,
+		4, 16, 24, 16, 4,
+		6, 24, 36, 24, 6,
+		4, 16, 24, 16, 4,
+		1, 4, 6, 4, 1);
+}
+
+Matriz kernelCompleto(int tamanho) {
+	Matriz retorno;
+
+	for (int i = 0; i < tamanho; i++) {
+		std::vector<int> aux;
+		for (int j = 0; j < tamanho; j++) {
+			aux.push_back(1);
+		}
+		retorno.push_back(aux);
+	}
+
+	return retorno;
+}
+
+Matriz elemEstrut33circle() {
+	return esCustom(3, 3,
+		0,1,0,
+		1,1,1,
+		0,1,0);
+}
+
+Matriz elemEstrut11x11circle() {
+	return esCustom(11, 11,
+		0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
+		0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
+		0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+		0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+		0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
+		0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0);
+}
+
 int intensidadeMaxima(cv::Mat imagemBase) {
 	int maximo = 0;
 	for (int x = 0; x < imagemBase.rows; x++) {
@@ -124,6 +183,7 @@ Mat alargamento(cv::Mat imagemBase) {
 
 	return aux;
 }
+
 int min(int a, int b) {
 	return !(b<a) ? a : b;     // or: return !comp(b,a)?a:b; for version (2)
 }
@@ -156,10 +216,10 @@ Mat somarHard(Mat imagem1, Mat imagem2)
 	return imagemResultado;
 }
 
-
 int max(int a, int b) {
 	return a < b ? b : a;
 }
+
 Mat somar128(Mat imagem1, Mat imagem2)
 {
 	Mat imagemResultado;
@@ -187,6 +247,7 @@ Mat somar128(Mat imagem1, Mat imagem2)
 
 	return imagemResultado;
 }
+
 Mat somar(Mat imagem1, Mat imagem2)
 {
 	Mat imagemResultado;
@@ -214,7 +275,6 @@ Mat somar(Mat imagem1, Mat imagem2)
 
 	return imagemResultado;
 }
-
 
 Mat subtrair(Mat imagem1, Mat imagem2)
 {
@@ -270,6 +330,67 @@ void histograma(Mat imagemBase, float vec[256]) {
 		vec[i] = vec[i]/size;
 	}
 	
+}
+
+Mat abertura(Mat imageBase, Matriz elemEstrut) {
+	Mat imagem = erosao(imageBase, elemEstrut);
+	return dilatacao(imagem, elemEstrut);
+}
+
+Mat fechamento(Mat imageBase, Matriz elemEstrut) {
+	Mat imagem = dilatacao(imageBase, elemEstrut);
+	return erosao(imagem, elemEstrut);
+}
+
+Mat erosao(Mat imagemBase, Matriz elemEstrut) {
+	Mat aux = imagemBase.clone();
+	uchar pixel;
+
+
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			
+			for (int linha = 0; linha < 3; linha++) {
+				for (int coluna = 0; coluna < 3; coluna++) {
+
+					if (elemEstrut[linha][coluna] == 1)
+					{
+						pixel = imagemBase.at<uchar>(x + linha, y + coluna);
+
+						if (pixel == 0) {
+							aux.at<uchar>(x, y) = pixel;
+						}
+					}
+				}
+			}
+		}
+	}
+	return aux;
+}
+
+Mat dilatacao(Mat imagemBase, Matriz elemEstrut) {
+	Mat aux = imagemBase.clone();
+	uchar pixel;
+	
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+
+			for (int linha = 0; linha < 3; linha++) {
+				for (int coluna = 0; coluna < 3; coluna++) {
+
+					if (elemEstrut[linha][coluna] == 1)
+					{
+						pixel = imagemBase.at<uchar>(x + linha, y + coluna);
+
+						if (pixel == 255) {
+							aux.at<uchar>(x, y) = pixel;
+						}
+					}
+				}
+			}
+		}
+	}
+	return aux;
 }
 
 Mat agucamento(Mat imagemBase, bool tipo) {
@@ -592,8 +713,6 @@ Mat janelamento(Mat imagemBase, int li, int ls) {
 	return aux;
 }
 
-
-
 Mat suavizacao(Mat imagemBase,int size)
 {
 	int** mat = new int*[size];
@@ -669,6 +788,7 @@ Mat suavizacao_cinza(Mat imagemBase,int size)
 
 	return aux;
 }
+
 Mat logaritmo(Mat imagemBase) {
 	Mat aux = escalaCinzaOPenCV(imagemBase.clone());
 	for (int x = 0; x < aux.rows; x++) {
@@ -710,3 +830,22 @@ Mat escalaCinzaOPenCV(Mat imagemColorida) {
 
 	return aux;
 }
+
+Matriz esCustom(int tamX, int tamY, ...) {
+	Matriz retorno;
+
+	va_list args;
+	va_start(args, tamY);
+
+	for (int i = 0; i < tamX; i++) {
+		std::vector<int> aux;
+		for (int j = 0; j < tamY; j++) {
+			aux.push_back(va_arg(args, int));
+		}
+		retorno.push_back(aux);
+	}
+	va_end(args);
+
+	return retorno;
+}
+
