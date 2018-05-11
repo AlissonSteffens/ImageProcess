@@ -31,6 +31,11 @@ Matriz elemEstrut11x11circle();
 Matriz elemEstrut33circle();
 Matriz kernelPonderado5();
 Matriz kernelCompleto(int tamanho);
+Matriz esQuadrado(int tamanho);
+Matriz esDiamante(int tamanho);
+Matriz esCirculo(int tamanho);
+Matriz esRetangulo(int tamanhoX, int tamanhoY);
+Mat desenharHistograma(Mat imagemBase);
 float limiarizacaoGlobalSimples(Mat imagemBase);
 void histograma(Mat imagemBase, float vec[256]);
 
@@ -43,17 +48,21 @@ int main()
 	Mat imagemTeste;
 	Mat imagemNegativo;
 	Mat imagemGrayscale;
-	imagemTeste = imread("Imagens/erosao.tif");
+	imagemTeste = imread("Imagens/aberturafechamento.tif");
 	imagemNegativo = negativo(imagemTeste);
 	imagemGrayscale = escalaCinzaOPenCV(imagemTeste);
 	imagemOriginal = imagemTeste.clone();
 	//int a = limiarizacaoGlobalSimples(imagemTeste);
 
 	imshow("Original", imagemTeste);
-	imshow("Erosao", erosao(imagemGrayscale, kernelCompleto(11)));
-	//imshow("Dilatacao", dilatacao(imagemGrayscale, kernelCompleto(11)));
-	/*imshow("Abertura", abertura(imagemGrayscale, elemEstrut33circle()));
-	imshow("Fechamento", fechamento(imagemGrayscale, elemEstrut33circle()));*/
+	//imshow("histo", desenharHistograma(imagemTeste));
+	
+	//imshow("Erosao", erosao(imagemGrayscale, kernelCompleto(15)));
+	//imshow("Dilatacao", dilatacao(imagemGrayscale, kernelCompleto(15)));
+
+
+	//imshow("Abertura", abertura(imagemGrayscale, esCirculo(3)));
+	imshow("Fechamento", abertura(fechamento(imagemGrayscale, esCirculo(3)), esCirculo(3)));
 	/*imshow("Negativo", imagemNegativo);
 	imshow("Cinza", imagemGrayscale);
 	imshow("OPCV", escalaCinzaOPenCV(imagemTeste));
@@ -90,6 +99,26 @@ int main()
 	waitKey(0);
     
 	return 0;
+}
+
+Mat desenharHistograma(Mat imagemBase) {
+	float vec[256];
+	histograma(imagemBase, vec);
+	Mat aux = imagemBase.clone();
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			aux.at<Vec3b>(x, y) = Vec3b(0, 0, 0);
+		}
+	}
+	int altura;
+	for (int x = 0; x < 256; x++) {
+		altura = vec[x] * 10000;
+		for (int y = 0; y < altura; y++) {
+			aux.at<Vec3b>(aux.rows - 1 - y, x) = Vec3b(255,255,255);
+		}
+	}
+	return aux;
+
 }
 
 Matriz kernelPonderado5() {
@@ -135,6 +164,62 @@ Matriz elemEstrut11x11circle() {
 		0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0,
 		0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0);
+}
+
+Matriz esQuadrado(int tamanho) {
+	return esRetangulo(tamanho, tamanho);
+}
+
+Matriz esDiamante(int tamanho) {
+	Matriz retorno;
+
+	for (int i = 0; i < tamanho; i++) {
+		std::vector<int> aux;
+		for (int j = 0; j < tamanho; j++) {
+			if (i + j < tamanho / 2 || i + j >= tamanho + tamanho / 2 ||
+				i - j < (tamanho / 2) * -1 || i - j > tamanho / 2)
+				aux.push_back(0);
+			else
+				aux.push_back(1);
+		}
+		retorno.push_back(aux);
+	}
+
+	return retorno;
+}
+
+Matriz esCirculo(int tamanho) {
+	if (tamanho < 7)
+		return esDiamante(tamanho);
+
+	Matriz retorno;
+
+	for (int i = 0; i < tamanho; i++) {
+		std::vector<int> aux;
+		for (int j = 0; j < tamanho; j++) {
+			if (sqrt((i - tamanho / 2) * (i - tamanho / 2) + (j - tamanho / 2) * (j - tamanho / 2)) > tamanho / 2 + 0.5f)
+				aux.push_back(0);
+			else
+				aux.push_back(1);
+		}
+		retorno.push_back(aux);
+	}
+
+	return retorno;
+}
+
+Matriz esRetangulo(int tamanhoX, int tamanhoY) {
+	Matriz retorno;
+
+	for (int i = 0; i < tamanhoX; i++) {
+		std::vector<int> aux;
+		for (int j = 0; j < tamanhoY; j++) {
+			aux.push_back(1);
+		}
+		retorno.push_back(aux);
+	}
+
+	return retorno;
 }
 
 int intensidadeMaxima(cv::Mat imagemBase) {
@@ -350,8 +435,8 @@ Mat erosao(Mat imagemBase, Matriz elemEstrut) {
 	for (int x = 0; x < aux.rows; x++) {
 		for (int y = 0; y < aux.cols; y++) {
 			
-			for (int linha = 0; linha < 3; linha++) {
-				for (int coluna = 0; coluna < 3; coluna++) {
+			for (int linha = 0; linha < elemEstrut.size(); linha++) {
+				for (int coluna = 0; coluna < elemEstrut[linha].size(); coluna++) {
 
 					if (elemEstrut[linha][coluna] == 1)
 					{
@@ -375,8 +460,8 @@ Mat dilatacao(Mat imagemBase, Matriz elemEstrut) {
 	for (int x = 0; x < aux.rows; x++) {
 		for (int y = 0; y < aux.cols; y++) {
 
-			for (int linha = 0; linha < 3; linha++) {
-				for (int coluna = 0; coluna < 3; coluna++) {
+			for (int linha = 0; linha <  elemEstrut.size(); linha++) {
+				for (int coluna = 0; coluna <  elemEstrut[linha].size(); coluna++) {
 
 					if (elemEstrut[linha][coluna] == 1)
 					{
@@ -848,4 +933,3 @@ Matriz esCustom(int tamX, int tamY, ...) {
 
 	return retorno;
 }
-
