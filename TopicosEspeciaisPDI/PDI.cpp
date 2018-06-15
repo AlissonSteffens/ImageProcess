@@ -326,6 +326,101 @@ cv::Mat PDI::erosao(cv::Mat imagemBase, Matriz elementoEstruturante, int cGravid
 	return aux;
 }
 
+bool PDI::testeDilatarSemente(cv::Mat imagemSemente, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y) {
+	for (int i = x - deslCima, esX = 0; i <= x + deslBaixo; i++, esX++) {
+		for (int j = y - deslEsq, esY = 0; j <= y + deslDir; j++, esY++) {
+			if (i < 0 || j < 0 || i >= imagemSemente.rows || j >= imagemSemente.cols)
+				continue;
+			PixelEC pixelbase = imagemSemente.at<PixelEC>(i, j);
+
+			if (pixelbase == 255 && elementoEstruturante[esX][esY] == 1)
+				return true;
+		}
+	}
+
+	return false;
+}
+
+cv::Mat PDI::dilatacao_sementes(cv::Mat imagemBase, cv::Mat imagemSementes, bool &tem_que_dilatar, Matriz elementoEstruturante) {
+	cv::Mat aux = imagemSementes.clone();
+
+	int deslCima = elementoEstruturante.size()/2;
+	int deslBaixo = elementoEstruturante.size() - deslCima - 1;
+	int deslEsq = elementoEstruturante.size() / 2;
+	int deslDir = elementoEstruturante[0].size() - deslEsq - 1;
+	bool mudou = false;
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			PixelEC pixel = imagemSementes.at<PixelEC>(x, y);
+			if (pixel == 0) {
+				PixelEC pixelseed = imagemBase.at<PixelEC>(x, y);
+				if (testeDilatar(imagemSementes, elementoEstruturante, deslEsq, deslDir, deslCima, deslBaixo, x, y)) {
+					//if (testeDilatar(imagemBase, elementoEstruturante, deslEsq, deslDir, deslCima, deslBaixo, x, y)) {
+					if (pixelseed == 255) {
+						aux.at<PixelEC>(x, y) = 255;
+						mudou = true;
+					}
+
+					//}
+				}
+			}
+			
+			
+		}
+	}
+	if (!mudou) {
+		tem_que_dilatar = false;
+	}
+
+	return aux;
+}
+
+bool PDI::testeErodirSemente(cv::Mat imagemBase, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y) {
+	bool algum = false;
+	for (int i = x - deslCima, esX = 0; i <= x + deslBaixo; i++, esX++) {
+		for (int j = y - deslEsq, esY = 0; j <= y + deslDir; j++, esY++) {
+			if (i < 0 || j < 0 || i >= imagemBase.rows || j >= imagemBase.cols)
+				continue;
+			PixelEC pixel = imagemBase.at<PixelEC>(i, j);
+			if (pixel == 255 && !(i==x && j==y) && elementoEstruturante[esX][esY] == 1) {
+				algum = true;
+			}
+		}
+	}
+	return algum;
+	
+}
+
+cv::Mat PDI::erosao_sementes(cv::Mat imagemBase, Matriz elementoEstruturante) {
+	cv::Mat aux = imagemBase.clone();
+
+	int deslCima = elementoEstruturante.size() / 2;
+	int deslBaixo = elementoEstruturante.size() - deslCima - 1;
+	int deslEsq = elementoEstruturante[0].size() / 2;
+	int deslDir = elementoEstruturante[0].size() - deslEsq - 1;
+
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			
+
+			if (testeErodir(imagemBase, elementoEstruturante, deslEsq, deslDir, deslCima, deslBaixo, x, y)) {
+				PixelEC pixel = aux.at<PixelEC>(x, y);
+				if (pixel == 255) {
+					if (testeErodirSemente(aux, elementoEstruturante, deslEsq, deslDir, deslCima, deslBaixo, x, y)) {
+						aux.at<PixelEC>(x, y) = 0;
+					}
+				}
+				else {
+					aux.at<PixelEC>(x, y) = 0;
+				}
+				
+			}
+		}
+	}
+
+	return aux;
+}
+
 cv::Mat PDI::abertura(cv::Mat imagemBase, Matriz elementoEstruturante) {
 	return abertura(imagemBase, elementoEstruturante, elementoEstruturante.size() / 2, elementoEstruturante[0].size() / 2);
 }

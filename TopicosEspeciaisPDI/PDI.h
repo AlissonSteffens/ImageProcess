@@ -33,6 +33,11 @@ public:
 	static cv::Mat erosao(cv::Mat imagemBase, Matriz elementoEstruturante);
 	static cv::Mat erosao(cv::Mat imagemBase, Matriz elementoEstruturante, int cGravidadeX, int cGravidadeY);
 
+
+	static cv::Mat erosao_sementes(cv::Mat imagemBase, Matriz elementoEstruturante);
+	static cv::Mat dilatacao_sementes(cv::Mat imagemBase, cv::Mat imagemSementes, bool &tem_que_dilatar, Matriz elementoEstruturante);
+
+
 	static cv::Mat abertura(cv::Mat imagemBase, Matriz elementoEstruturante);
 	static cv::Mat abertura(cv::Mat imagemBase, Matriz elementoEstruturante, int cGravidadeX, int cGravidadeY);
 	static cv::Mat fechamento(cv::Mat imagemBase, Matriz elementoEstruturante);
@@ -59,6 +64,9 @@ private:
 
 	static bool testeDilatar(cv::Mat imagemBase, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y);
 	static bool testeErodir(cv::Mat imagemBase, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y);
+
+	static bool testeDilatarSemente(cv::Mat imagemSemente, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y);
+	static bool testeErodirSemente(cv::Mat imagemBase, Matriz elementoEstruturante, int deslEsq, int deslDir, int deslCima, int deslBaixo, int x, int y);
 
 	static int compare(const void * a, const void * b);
 };
