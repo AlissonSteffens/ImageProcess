@@ -1,6 +1,7 @@
 #include "PDI.h"
 #include <algorithm>
 #include <cmath>
+#include <queue>
 
 
 cv::Mat PDI::escalaCinza(cv::Mat imagemColorida) {
@@ -421,6 +422,81 @@ cv::Mat PDI::erosao_sementes(cv::Mat imagemBase, Matriz elementoEstruturante) {
 	return aux;
 }
 
+class Ponto
+{
+	public:
+		int x;
+		int y;
+		Ponto(int x1, int y1)
+		{
+			x = x1;
+			y = y1;
+		}
+};
+
+void olhar_vizinhos(cv::Mat &imagemBase, std::queue<Ponto> &vizinhos, int label) {
+	Ponto pixel_atual = vizinhos.front();
+	vizinhos.pop();
+	PixelEC pixelpai = imagemBase.at<PixelEC>(pixel_atual.x, pixel_atual.y);
+	if (pixelpai == 255) {
+		
+		imagemBase.at<PixelEC>(pixel_atual.x, pixel_atual.y) = label;
+		for (int x = -1; x <= 1; x++) {
+			for (int y = -1; y <= 1; y++) {
+				if ((pixel_atual.x + x) >= 0 && (pixel_atual.x + x) < imagemBase.rows && (pixel_atual.y + y) >= 0 && (pixel_atual.y + y) < imagemBase.cols) {
+
+					PixelEC pixel = imagemBase.at<PixelEC>((pixel_atual.x + x), (pixel_atual.y + y));
+					if (pixel == 255) {
+						Ponto ptn = Ponto((pixel_atual.x + x), (pixel_atual.y + y));
+						vizinhos.push(ptn);
+						
+						//olhar_vizinhos(imagemBase, ptn, vizinhos, label);
+					}
+
+				}
+			}
+		}
+	}	
+}
+
+cv::Mat PDI::labeling (cv::Mat imagemBase) {
+	cv::Mat aux = imagemBase.clone();
+	int label_atual = 1;
+
+	for (int x = 0; x < aux.rows; x++) {
+		for (int y = 0; y < aux.cols; y++) {
+			PixelEC pixel = aux.at<PixelEC>(x, y);
+			if (pixel == 255) {
+				std::queue<Ponto> vizinhos;
+				Ponto p = Ponto(x, y);
+				vizinhos.push(p);
+				while (vizinhos.size() > 0) {
+					olhar_vizinhos(aux, vizinhos, label_atual);
+				}
+				
+				label_atual++;
+			}
+		}
+	}
+
+	Pixel foo[8] = { Pixel(241, 240, 236), Pixel(219,152,52), Pixel(182,89,155), Pixel(60,76,231), Pixel(156,188,26), Pixel(34,126,230), Pixel(113, 204, 46), Pixel(15,196,241) };
+
+	cv::Mat imagemColorida;
+	cv::cvtColor(imagemBase, imagemColorida, CV_GRAY2BGR);
+	for (int x = 0; x < imagemColorida.rows; x++) {
+		for (int y = 0; y < imagemColorida.cols; y++) {
+			PixelEC pixelb = aux.at<PixelEC>(x, y);
+			if (pixelb != 0) {
+				imagemColorida.at<Pixel>(x, y) = foo[pixelb%8];
+			}
+			else {
+				imagemColorida.at<Pixel>(x, y) = Pixel(30,30,30);
+			}
+		}
+	}
+	std::cout << "Saida " << label_atual-1;
+	return imagemColorida;
+}
 cv::Mat PDI::abertura(cv::Mat imagemBase, Matriz elementoEstruturante) {
 	return abertura(imagemBase, elementoEstruturante, elementoEstruturante.size() / 2, elementoEstruturante[0].size() / 2);
 }

@@ -9,10 +9,14 @@ using PixelEC = uchar;
 class PDI
 {
 public:
+
+	
 	static cv::Mat escalaCinza(cv::Mat imagemColorida);
 	static cv::Mat canal(cv::Mat imagemColorida, int canal);
 	static cv::Mat negativo(cv::Mat imagemBase);
 	static cv::Mat limiarizacao(cv::Mat imagemBase, int limiar);
+
+	static cv::Mat labeling(cv::Mat imagemColorida);
 
 	static cv::Mat logaritmo(cv::Mat imagemBase);
 	static cv::Mat potencia(cv::Mat imagemBase, float gama);
